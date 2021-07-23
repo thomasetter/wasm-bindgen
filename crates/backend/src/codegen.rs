@@ -1417,15 +1417,11 @@ impl ToTokens for ast::Enum {
                }
             });
 
-            let fields_into_vector = fields.iter().enumerate().map(|(index, field)| {
-                let varname = format_ident!("arg{}", index);
-               quote! {
-                   #field::into_abi(#varname)
-               }
-            });
+            let field_names = field_vector_into_tuple.clone();
 
             quote! {
-                #enum_name::#variant_name(#(#field_vector_into_tuple),*) => vec![#variant_value, #(#fields_into_vector),*]
+                #enum_name::#variant_name(#(#field_vector_into_tuple),*)
+                    => vec![#variant_value, #((#field_names).into_abi()),*]
             }
         });
         let try_from_cast_clauses = cast_clauses.clone();
