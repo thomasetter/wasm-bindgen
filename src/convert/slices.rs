@@ -49,7 +49,7 @@ impl WasmAbi for WasmSlice {
 }
 
 #[inline]
-fn null_slice() -> WasmSlice {
+pub fn null_slice() -> WasmSlice {
     WasmSlice { ptr: 0, len: 0 }
 }
 
