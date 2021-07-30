@@ -1393,14 +1393,14 @@ impl ToTokens for ast::Enum {
             let variant_value = &variant.value;
 
             let fields = &variant.fields.clone();
-            let variant_fields_into_array = fields.iter().enumerate().map(|(index, field)| {
+            let variant_fields_into_array = fields.iter().map(|field| {
                 quote! {
-                    #field::from_abi(variant[(#index + 1)])
+                    #field::from_abi(<#field as FromWasmAbi>::Abi::pop_from_u32_vector(&mut vector))
                 }
             });
 
             quote! {
-                if variant[0] == #variant_value {
+                if vector.pop().unwrap() == #variant_value {
                     #enum_name::#variant_name(#(#variant_fields_into_array),*)
                 }
             }
@@ -1412,16 +1412,20 @@ impl ToTokens for ast::Enum {
             let fields = &variant.fields.clone();
             let field_vector_into_tuple = fields.iter().enumerate().map(|(index, _)| {
                 let varname = format_ident!("arg{}", index);
-               quote! {
-                   #varname
-               }
+                quote! {
+                    #varname
+                }
             });
 
             let field_names = field_vector_into_tuple.clone();
 
             quote! {
                 #enum_name::#variant_name(#(#field_vector_into_tuple),*)
-                    => vec![#variant_value, #((#field_names).into_abi()),*]
+                    => {
+                        let mut vector = vec![(#variant_value).into_abi()];
+                        #((#field_names).into_abi().push_into_u32_vector(&mut vector));*;
+                        vector
+                    }
             }
         });
         let try_from_cast_clauses = cast_clauses.clone();
@@ -1454,10 +1458,11 @@ impl ToTokens for ast::Enum {
                 unsafe fn from_abi(js: WasmSlice) -> Self {
                     let ptr = <*mut u32>::from_abi(js.ptr);
                     let len = js.len as usize;
-                    let variant = Vec::from_raw_parts(ptr, len, len).into_boxed_slice();
+                    let mut vector = Vec::from_raw_parts(ptr, len, len);
+                    let err = format!("{:?}", vector.len()).as_str();
 
                     #(#cast_clauses else)* {
-                        wasm_bindgen::throw_str("invalid enum value passed")
+                        wasm_bindgen::throw_str(err,)
                     }
                 }
             }
@@ -1483,7 +1488,6 @@ impl ToTokens for ast::Enum {
                     inform(ENUM);
                     inform(#name_len);
                     #(inform(#name_chars);)*
-                    inform(#hole);
                 }
             }
 

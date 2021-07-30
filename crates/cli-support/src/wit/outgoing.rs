@@ -151,6 +151,22 @@ impl InstructionBuilder<'_, '_> {
                 arg
             ),
 
+            Descriptor::Enum { .. } => {
+                let kind = crate::descriptor::VectorKind::U32;
+
+                let mem = self.cx.memory()?;
+                let free = self.cx.free()?;
+                self.instruction(
+                    &[AdapterType::I32, AdapterType::I32],
+                    Instruction::VectorLoad {
+                        kind,
+                        mem,
+                        free,
+                    },
+                    &[AdapterType::Enum],
+                );
+            }
+
             // nothing to do
             Descriptor::Unit => {}
 

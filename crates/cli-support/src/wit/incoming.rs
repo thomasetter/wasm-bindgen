@@ -108,6 +108,7 @@ impl InstructionBuilder<'_, '_> {
                     &[AdapterType::I32],
                 );
             },
+            }
             Descriptor::Ref(d) => self.incoming_ref(false, d)?,
             Descriptor::RefMut(d) => self.incoming_ref(true, d)?,
             Descriptor::Option(d) => self.incoming_option(d)?,
@@ -284,10 +285,14 @@ impl InstructionBuilder<'_, '_> {
                 );
             }
             Descriptor::Enum { name, hole } => {
+                let kind = crate::descriptor::VectorKind::U32;
+
+                let malloc = self.cx.malloc()?;
+                let mem = self.cx.memory()?;
                 self.instruction(
                     &[AdapterType::Enum(name.clone()).option()],
-                    Instruction::I32FromOptionEnum { hole: *hole },
-                    &[AdapterType::I32],
+                    Instruction::OptionVector { kind, malloc, mem },
+                    &[AdapterType::I32, AdapterType::I32],
                 );
             }
             Descriptor::RustStruct(name) => {
