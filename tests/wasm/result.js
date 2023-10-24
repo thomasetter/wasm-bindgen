@@ -86,7 +86,7 @@ exports.call_string_err = function() {
 exports.call_enum_ok = function() {
     assert.doesNotThrow(() => {
         let ok = wasm.return_enum_ok();
-        assert.strictEqual(ok, 2);
+        assert.strictEqual(ok, wasm.MyEnum.Two);
     })
 }
 

@@ -841,9 +841,30 @@ fn instruction(
 
         Instruction::I32FromOptionEnum { hole } => {
             let val = js.pop();
+            let tag = format!("{}.tag", val);
             js.cx.expose_is_like_none();
-            js.assert_optional_number(&val);
-            js.push(format!("isLikeNone({0}) ? {1} : {0}", val, hole));
+
+            js.prelude(&format!("if (!isLikeNone({})) {{", val));
+            js.assert_optional_number(&tag);
+            js.prelude("}");
+            js.push(format!(
+                "(isLikeNone({0}) || isLikeNone({1})) ? {2} : {1}",
+                val, tag, hole
+            ));
+        }
+        Instruction::I32FromEnum { hole } => {
+            let val = js.pop();
+            let tag = format!("{}.tag", val);
+            js.cx.expose_is_like_none();
+            // TODO: assert not like none
+
+            js.prelude(&format!("if (!isLikeNone({})) {{", val));
+            js.assert_optional_number(&tag);
+            js.prelude("}");
+            js.push(format!(
+                "(isLikeNone({0}) || isLikeNone({1})) ? {2} : {1}",
+                val, tag, hole
+            ));
         }
 
         Instruction::FromOptionNative { ty } => {
@@ -1234,9 +1255,20 @@ fn instruction(
             ));
         }
 
-        Instruction::OptionEnumFromI32 { hole } => {
+        Instruction::OptionEnumFromI32 { hole, name } => {
             let val = js.pop();
-            js.push(format!("{0} === {1} ? undefined : {0}", val, hole));
+            js.push(format!(
+                "{0} === {1} ? undefined : {2}[{2}_Tags[{0}]]",
+                val, hole, name
+            ));
+        }
+        Instruction::EnumFromI32 { hole, name } => {
+            let val = js.pop();
+
+            js.push(format!(
+                "{0} === {1} ? undefined : {2}[{2}_Tags[{0}]]",
+                val, hole, name
+            ));
         }
 
         Instruction::I32FromNonNull => {

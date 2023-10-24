@@ -24,14 +24,17 @@ exports.test_works = function() {
   assert.strictEqual(r2.add(2), 13);
   r2.free();
 
-  assert.strictEqual(wasm.NodeColor.Green, 0);
-  assert.strictEqual(wasm.NodeColor.Yellow, 1);
-  assert.strictEqual(wasm.NodeColor.Red, 2);
-  assert.strictEqual(wasm.NodeColor[0], 'Green');
-  assert.strictEqual(wasm.NodeColor[1], 'Yellow');
-  assert.strictEqual(wasm.NodeColor[2], 'Red');
-  assert.strictEqual(Object.keys(wasm.NodeColor).length, 6);
+  assert.strictEqual(wasm.NodeColor_Tags.Green, 0);
+  assert.strictEqual(wasm.NodeColor_Tags.Yellow, 1);
+  assert.strictEqual(wasm.NodeColor_Tags.Red, 2);
+  assert.strictEqual(wasm.NodeColor_Tags[0], 'Green');
+  assert.strictEqual(wasm.NodeColor_Tags[1], 'Yellow');
+  assert.strictEqual(wasm.NodeColor_Tags[2], 'Red');
+  assert.strictEqual(Object.keys(wasm.NodeColor_Tags).length, 6);
   assert.strictEqual(wasm.cycle(wasm.NodeColor.Green), wasm.NodeColor.Yellow);
+
+  // TODO: assert the enum on arguments
+  assert.strictEqual(wasm.cycle(wasm.Color.Green), wasm.NodeColor.Yellow);
 
   wasm.node_math(1.0, 2.0);
 };

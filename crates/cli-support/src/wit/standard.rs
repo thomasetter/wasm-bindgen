@@ -187,6 +187,11 @@ pub enum Instruction {
     I32FromOptionEnum {
         hole: u32,
     },
+    /// Pops an `externref` from the stack, pushes `hole` for "none" or the
+    /// value if it's "some"
+    I32FromEnum {
+        hole: u32,
+    },
     /// Pops any externref from the stack and then pushes two values. First is a
     /// 0/1 if it's none/some and second is `ty` value if it was there or 0 if
     /// it wasn't there.
@@ -307,6 +312,11 @@ pub enum Instruction {
     OptionBoolFromI32,
     OptionCharFromI32,
     OptionEnumFromI32 {
+        name: String,
+        hole: u32,
+    },
+    EnumFromI32 {
+        name: String,
         hole: u32,
     },
     I32FromOptionNonNull,

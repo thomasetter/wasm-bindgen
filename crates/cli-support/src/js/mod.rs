@@ -3652,7 +3652,9 @@ impl<'a> Context<'a> {
 
     fn generate_enum(&mut self, enum_: &AuxEnum) -> Result<(), Error> {
         let docs = format_doc_comments(&enum_.comments, None);
-        let mut variants = String::new();
+        let tags_name = &format!("{}_Tags", enum_.name);
+        let mut tag_variants = String::new();
+        let mut constructor_variants = String::new();
 
         if enum_.generate_typescript {
             self.typescript.push_str(&docs);
@@ -3666,11 +3668,16 @@ impl<'a> Context<'a> {
                 format_doc_comments(comments, None)
             };
             if !variant_docs.is_empty() {
-                variants.push('\n');
-                variants.push_str(&variant_docs);
+                tag_variants.push('\n');
+                tag_variants.push_str(&variant_docs);
             }
-            variants.push_str(&format!("{}:{},", name, value));
-            variants.push_str(&format!("\"{}\":\"{}\",", value, name));
+            tag_variants.push_str(&format!("{}:{},", name, value));
+            tag_variants.push_str(&format!("\"{}\":\"{}\",", value, name));
+
+            constructor_variants.push_str(&format!(
+                "{}:Object.freeze({{ tag: {}.{} }}),",
+                name, tags_name, name
+            ));
             if enum_.generate_typescript {
                 self.typescript.push('\n');
                 if !variant_docs.is_empty() {
@@ -3682,11 +3689,18 @@ impl<'a> Context<'a> {
         if enum_.generate_typescript {
             self.typescript.push_str("\n}\n");
         }
-        self.export(
-            &enum_.name,
-            &format!("Object.freeze({{ {} }})", variants),
-            Some(&docs),
-        )?;
+
+        self.global(&format!(
+            "const {} = Object.freeze({{ {} }})",
+            tags_name, tag_variants
+        ));
+        self.export(tags_name, tags_name, Some(&docs))?;
+
+        self.global(&format!(
+            "const {} = Object.freeze({{ {} }})",
+            enum_.name, constructor_variants
+        ));
+        self.export(&enum_.name, &enum_.name, Some(&docs))?;
 
         Ok(())
     }
