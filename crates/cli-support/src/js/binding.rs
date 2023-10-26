@@ -839,32 +839,26 @@ fn instruction(
             js.push(val);
         }
 
-        Instruction::I32FromOptionEnum { hole } => {
+        Instruction::I32FromOptionEnum { name, hole } => {
             let val = js.pop();
             let tag = format!("{}.tag", val);
             js.cx.expose_is_like_none();
+            js.cx.expose_assert_class();
 
             js.prelude(&format!("if (!isLikeNone({})) {{", val));
-            js.assert_optional_number(&tag);
+            js.assert_class(&val, &format!("{}_Base", name));
             js.prelude("}");
             js.push(format!(
                 "(isLikeNone({0}) || isLikeNone({1})) ? {2} : {1}",
                 val, tag, hole
             ));
         }
-        Instruction::I32FromEnum { hole } => {
+        Instruction::I32FromEnum { name } => {
             let val = js.pop();
             let tag = format!("{}.tag", val);
-            js.cx.expose_is_like_none();
-            // TODO: assert not like none
-
-            js.prelude(&format!("if (!isLikeNone({})) {{", val));
-            js.assert_optional_number(&tag);
-            js.prelude("}");
-            js.push(format!(
-                "(isLikeNone({0}) || isLikeNone({1})) ? {2} : {1}",
-                val, tag, hole
-            ));
+            js.cx.expose_assert_class();
+            js.assert_class(&val, &format!("{}_Base", name));
+            js.push(tag);
         }
 
         Instruction::FromOptionNative { ty } => {

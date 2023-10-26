@@ -185,12 +185,12 @@ pub enum Instruction {
     /// Pops an `externref` from the stack, pushes `hole` for "none" or the
     /// value if it's "some"
     I32FromOptionEnum {
+        name: String,
         hole: u32,
     },
-    /// Pops an `externref` from the stack, pushes `hole` for "none" or the
-    /// value if it's "some"
+    /// Pops an `externref` from the stack, pushes the tag value.
     I32FromEnum {
-        hole: u32,
+        name: String,
     },
     /// Pops any externref from the stack and then pushes two values. First is a
     /// 0/1 if it's none/some and second is `ty` value if it was there or 0 if

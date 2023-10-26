@@ -11,11 +11,20 @@ extern "C" {
     fn js_expect_enum_none(x: Option<Color>);
     fn js_renamed_enum(b: RenamedEnum);
     fn js_enum_with_error_variant();
+    fn js_enum_type_safety();
 }
 
 #[wasm_bindgen]
 #[derive(PartialEq, Debug)]
 pub enum Color {
+    Green,
+    Yellow,
+    Red,
+}
+
+#[wasm_bindgen]
+#[derive(PartialEq, Debug)]
+pub enum ColorCopy {
     Green,
     Yellow,
     Red,
@@ -108,4 +117,9 @@ fn test_renamed_enum() {
 #[wasm_bindgen_test]
 fn test_enum_with_error_variant() {
     js_enum_with_error_variant();
+}
+
+#[wasm_bindgen_test]
+fn enum_type_safety() {
+    js_enum_type_safety();
 }

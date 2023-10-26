@@ -15,6 +15,7 @@ exports.js_c_style_enum = () => {
     assert.strictEqual(wasm.Color.Red.tag, 2);
 
     assert.strictEqual(wasm.enum_cycle(wasm.Color.Green), wasm.Color.Yellow);
+    assert.throws(() => {wasm.enum_cycle(undefined);});
 };
 
 exports.js_c_style_enum_with_custom_values = () => {
@@ -46,3 +47,9 @@ exports.js_renamed_enum = b => {
 exports.js_enum_with_error_variant = () => {
     assert.strictEqual(wasm.EnumWithErrorVariant_Tags.Error, 2);
 };
+
+exports.js_enum_type_safety = () => {
+    assert.doesNotThrow(() => {wasm.enum_cycle(wasm.Color.Green);});
+    // ColorCopy has the same structure and tag values, but is a different class, make sure we catch mix-ups.
+    assert.throws(() => {wasm.enum_cycle(wasm.ColorCopy.Green);});
+}

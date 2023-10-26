@@ -3653,6 +3653,7 @@ impl<'a> Context<'a> {
     fn generate_enum(&mut self, enum_: &AuxEnum) -> Result<(), Error> {
         let docs = format_doc_comments(&enum_.comments, None);
         let tags_name = &format!("{}_Tags", enum_.name);
+        let base_name = &format!("{}_Base", enum_.name);
         let mut tag_variants = String::new();
         let mut constructor_variants = String::new();
 
@@ -3675,8 +3676,8 @@ impl<'a> Context<'a> {
             tag_variants.push_str(&format!("\"{}\":\"{}\",", value, name));
 
             constructor_variants.push_str(&format!(
-                "{}:Object.freeze({{ tag: {}.{} }}),",
-                name, tags_name, name
+                "{}:Object.freeze(new {}({}.{})), ",
+                name, base_name, tags_name, name
             ));
             if enum_.generate_typescript {
                 self.typescript.push('\n');
@@ -3695,6 +3696,17 @@ impl<'a> Context<'a> {
             tags_name, tag_variants
         ));
         self.export(tags_name, tags_name, Some(&docs))?;
+
+        self.global(&format!(
+            "
+              class {} {{
+                  constructor(tag) {{
+                    this.tag = tag;
+                  }}
+              }}
+            ",
+            base_name
+        ));
 
         self.global(&format!(
             "const {} = Object.freeze({{ {} }})",

@@ -98,10 +98,10 @@ impl InstructionBuilder<'_, '_> {
                 self.get(AdapterType::F64);
                 self.output.push(AdapterType::F64);
             }
-            Descriptor::Enum { name, hole } => {
+            Descriptor::Enum { name, ..} => {
                 self.instruction(
                     &[AdapterType::Enum(name.clone())],
-                    Instruction::I32FromEnum { hole: *hole } ,
+                    Instruction::I32FromEnum {name: name.clone()} ,
                                         &[AdapterType::I32],
                 );
             },
@@ -289,7 +289,10 @@ impl InstructionBuilder<'_, '_> {
             Descriptor::Enum { name, hole } => {
                 self.instruction(
                     &[AdapterType::Enum(name.clone()).option()],
-                    Instruction::I32FromOptionEnum { hole: *hole },
+                    Instruction::I32FromOptionEnum {
+                        name: name.clone(),
+                        hole: *hole,
+                    },
                     &[AdapterType::I32],
                 );
             }

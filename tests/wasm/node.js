@@ -33,8 +33,5 @@ exports.test_works = function() {
   assert.strictEqual(Object.keys(wasm.NodeColor_Tags).length, 6);
   assert.strictEqual(wasm.cycle(wasm.NodeColor.Green), wasm.NodeColor.Yellow);
 
-  // TODO: assert the enum on arguments
-  assert.strictEqual(wasm.cycle(wasm.Color.Green), wasm.NodeColor.Yellow);
-
   wasm.node_math(1.0, 2.0);
 };

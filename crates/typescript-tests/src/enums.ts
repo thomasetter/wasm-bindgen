@@ -6,13 +6,13 @@ test("construction", () => {
   const a2: wbg.Foo.A = wbg.Foo.A;
   expect(a1).toStrictEqual(a2);
   const a3: wbg.Foo.A = 1;
-  expect(a1).toStrictEqual(a3);
+  expect(a1).not.toStrictEqual(a3);
 
   const b1: wbg.Foo = wbg.Foo.B;
   const b2: wbg.Foo.B = wbg.Foo.B;
   expect(b1).toStrictEqual(b2);
   const b3: wbg.Foo.B = 3;
-  expect(b1).toStrictEqual(b3);
+  expect(b1).not.toStrictEqual(b3);
   expect(a1).not.toStrictEqual(b1);
 });
 
