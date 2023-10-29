@@ -3,6 +3,8 @@
     "tsc": "tsc"
   },
   "devDependencies": {
+    "@playwright/test": "^1.39.0",
+    "@types/node": "^20.8.9",
     "typescript": "^5.2.2"
   }
 }
