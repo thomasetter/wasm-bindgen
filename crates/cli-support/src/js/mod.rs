@@ -3691,11 +3691,16 @@ impl<'a> Context<'a> {
             self.typescript.push_str("\n}\n");
         }
 
-        self.global(&format!(
-            "const {} = Object.freeze({{ {} }})",
-            tags_name, tag_variants
-        ));
-        self.export(tags_name, tags_name, Some(&docs))?;
+        let contents = format!("Object.freeze({{ {} }})", tag_variants);
+        match &self.config.mode {
+            OutputMode::Node { .. } | OutputMode::NoModules { .. } | OutputMode::Deno => {
+                self.global(&format!("const {} =  {} ", tags_name, contents));
+                self.export(tags_name, tags_name, Some(&docs))?;
+            }
+            _ => {
+                self.export(tags_name, &contents, Some(&docs))?;
+            }
+        }
 
         self.global(&format!(
             "
@@ -3708,11 +3713,16 @@ impl<'a> Context<'a> {
             base_name
         ));
 
-        self.global(&format!(
-            "const {} = Object.freeze({{ {} }})",
-            enum_.name, constructor_variants
-        ));
-        self.export(&enum_.name, &enum_.name, Some(&docs))?;
+        let contents = format!("Object.freeze({{ {} }})", constructor_variants);
+        match &self.config.mode {
+            OutputMode::Node { .. } | OutputMode::NoModules { .. } | OutputMode::Deno => {
+                self.global(&format!("const {} =  {} ", enum_.name, contents));
+                self.export(&enum_.name, &enum_.name, Some(&docs))?;
+            }
+            _ => {
+                self.export(&enum_.name, &contents, Some(&docs))?;
+            }
+        }
 
         Ok(())
     }
