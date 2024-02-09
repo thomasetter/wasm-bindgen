@@ -21,8 +21,16 @@ test("function calls", () => {
   const fn_returns_enum: () => wbg.Foo = wbg.fn_returns_enum;
   const fn_expects_option_enum: (_?: wbg.Foo) => void = wbg.fn_expects_option_enum;
   const fn_returns_option_enum: () => wbg.Foo | undefined = wbg.fn_returns_option_enum;
+  const fn_echo_option_enum: (_: wbg.Foo) => wbg.Foo | undefined = wbg.fn_echo_option_enum;
 
   fn_expects_enum(wbg.Foo.B);
+  expect(() => {fn_expects_enum(undefined);}).toThrow('expected instance of Foo_Base');
+  fn_expects_option_enum(wbg.Foo.B);
+  fn_expects_option_enum(undefined);
   expect(fn_returns_enum()).toStrictEqual(wbg.Foo.A);
   expect(fn_returns_option_enum()).toStrictEqual(wbg.Foo.A);
+
+  expect(fn_echo_option_enum(undefined)).toStrictEqual(undefined);
+  expect(fn_echo_option_enum(wbg.Foo.A)).toStrictEqual(wbg.Foo.A);
+  expect(fn_echo_option_enum(wbg.Foo.B)).toStrictEqual(wbg.Foo.B);
 });

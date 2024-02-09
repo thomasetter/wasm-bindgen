@@ -98,7 +98,7 @@ impl InstructionBuilder<'_, '_> {
                 self.get(AdapterType::F64);
                 self.output.push(AdapterType::F64);
             }
-            Descriptor::Enum { name, ..} => {
+            Descriptor::Enum { name, .. } => {
                 self.instruction(
                     &[AdapterType::Enum(name.clone())],
                     Instruction::I32FromEnum {name: name.clone()} ,

@@ -51,5 +51,10 @@ exports.js_enum_with_error_variant = () => {
 exports.js_enum_type_safety = () => {
     assert.doesNotThrow(() => {wasm.enum_cycle(wasm.Color.Green);});
     // ColorCopy has the same structure and tag values, but is a different class, make sure we catch mix-ups.
-    assert.throws(() => {wasm.enum_cycle(wasm.ColorCopy.Green);});
-}
+    assert.throws(
+      () => {wasm.enum_cycle(wasm.ColorCopy.Green);},
+      {
+        name: 'Error',
+        message : 'expected instance of Color_Base'
+      });
+};
