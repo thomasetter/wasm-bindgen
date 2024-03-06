@@ -841,6 +841,7 @@ impl ToTokens for ast::ImportType {
         };
 
         let description = if let Some(typescript_type) = &self.typescript_type {
+            dbg!(&typescript_type);
             let typescript_type_len = typescript_type.len() as u32;
             let typescript_type_chars = typescript_type.chars().map(|c| c as u32);
             quote! {

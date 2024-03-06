@@ -173,6 +173,7 @@ impl<'a> Context<'a> {
                     assert_eq!(export_name, definition_name);
                     format!("export {}\n", contents)
                 } else {
+                    dbg!(&export_name, &contents);
                     assert_eq!(export_name, definition_name);
                     format!("export const {} = {};\n", export_name, contents)
                 }
@@ -3655,13 +3656,16 @@ impl<'a> Context<'a> {
         let tags_name = &format!("{}_Tags", enum_.name);
         let base_name = &format!("{}_Base", enum_.name);
         let mut tag_variants = String::new();
+        let mut typescript_tag_variants = String::new();
         let mut constructor_variants = String::new();
+        let mut typescript_constructor_variants = String::new();
+        let mut typescript_constructor_type_variants = String::new();
 
-        if enum_.generate_typescript {
-            self.typescript.push_str(&docs);
-            self.typescript
-                .push_str(&format!("export enum {} {{", enum_.name));
-        }
+        // if enum_.generate_typescript {
+        //     self.typescript.push_str(dbg!(&docs));
+        //     self.typescript
+        //         .push_str(dbg!(&format!("type {} = ", enum_.name)));
+        // }
         for (name, value, comments) in enum_.variants.iter() {
             let variant_docs = if comments.is_empty() {
                 String::new()
@@ -3680,16 +3684,19 @@ impl<'a> Context<'a> {
                 name, base_name, tags_name, name
             ));
             if enum_.generate_typescript {
-                self.typescript.push('\n');
-                if !variant_docs.is_empty() {
-                    self.typescript.push_str(&variant_docs);
-                }
-                self.typescript.push_str(&format!("  {name} = {value},"));
+                typescript_tag_variants.push_str(&format!("\n const {} = {};", name, value));
+                typescript_constructor_variants.push_str(&format!("\n  {}(): {}({}.{});", name, base_name, tags_name,name));
+                typescript_constructor_type_variants.push_str(&format!("\n  {}: Readonly<{}>;", name, base_name));
+                //    self.typescript.push('\n');
+                //    if !variant_docs.is_empty() {
+                //        self.typescript.push_str(&variant_docs);
+                //    }
+                //    self.typescript.push_str(&format!("|  {name} = {value},"));
             }
         }
-        if enum_.generate_typescript {
-            self.typescript.push_str("\n}\n");
-        }
+        //if enum_.generate_typescript {
+        //    self.typescript.push_str("\n;\n");
+        //}
 
         let contents = format!("Object.freeze({{ {} }})", tag_variants);
         match &self.config.mode {
@@ -3712,6 +3719,17 @@ impl<'a> Context<'a> {
             ",
             base_name
         ));
+        if enum_.generate_typescript {
+            self.typescript.push_str(&format!(
+                "
+            declare class {} {{
+                constructor(tag: any);
+                tag: any;
+            }}
+",
+                base_name
+            ));
+        }
 
         let contents = format!("Object.freeze({{ {} }})", constructor_variants);
         match &self.config.mode {
@@ -3723,6 +3741,15 @@ impl<'a> Context<'a> {
                 self.export(&enum_.name, &contents, Some(&docs))?;
             }
         }
+        self.typescript.push_str(&format!("export const {}: Readonly<{{ {} }}>;\n", tags_name, tag_variants));
+        self.typescript
+            .push_str(&format!("export const {}: Readonly<{{{}\n}}>;\n", enum_.name, typescript_constructor_type_variants));
+        // TODO: add constructors
+        self.typescript
+            .push_str(&format!("export const {}: Readonly<{{{}\n}}>;\n", enum_.name, typescript_constructor_variants));
+        // self.typescript
+        //     .push_str(&format!("export const {} = typeof {}_Value;\n", enum_.name, enum_.name));
+        // self.typescript.push_str(&enum_.name, &enum_.name, Some(&docs))?;
 
         Ok(())
     }
