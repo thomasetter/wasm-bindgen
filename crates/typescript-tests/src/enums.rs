@@ -21,3 +21,8 @@ pub fn fn_expects_option_enum(_: Option<Foo>) {}
 pub fn fn_returns_option_enum() -> Option<Foo> {
     Some(Foo::A)
 }
+
+#[wasm_bindgen]
+pub fn fn_echo_option_enum(maybe_foo: Option<Foo>) -> Option<Foo> {
+    maybe_foo
+}

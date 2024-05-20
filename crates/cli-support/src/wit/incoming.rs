@@ -101,11 +101,8 @@ impl InstructionBuilder<'_, '_> {
             Descriptor::Enum { name, .. } => {
                 self.instruction(
                     &[AdapterType::Enum(name.clone())],
-                    Instruction::IntToWasm {
-                        input: AdapterType::U32,
-                        output: ValType::I32,
-                    },
-                    &[AdapterType::I32],
+                    Instruction::I32FromEnum {name: name.clone()} ,
+                                        &[AdapterType::I32],
                 );
             },
             Descriptor::Ref(d) => self.incoming_ref(false, d)?,
@@ -292,7 +289,10 @@ impl InstructionBuilder<'_, '_> {
             Descriptor::Enum { name, hole } => {
                 self.instruction(
                     &[AdapterType::Enum(name.clone()).option()],
-                    Instruction::I32FromOptionEnum { hole: *hole },
+                    Instruction::I32FromOptionEnum {
+                        name: name.clone(),
+                        hole: *hole,
+                    },
                     &[AdapterType::I32],
                 );
             }

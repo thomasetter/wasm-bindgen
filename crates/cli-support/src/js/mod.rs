@@ -173,6 +173,7 @@ impl<'a> Context<'a> {
                     assert_eq!(export_name, definition_name);
                     format!("export {}\n", contents)
                 } else {
+                    dbg!(&export_name, &contents);
                     assert_eq!(export_name, definition_name);
                     format!("export const {} = {};\n", export_name, contents)
                 }
@@ -1768,25 +1769,6 @@ impl<'a> Context<'a> {
         self.memview("Float64", memory)
     }
 
-    fn memview_function(&mut self, t: VectorKind, memory: MemoryId) -> MemView {
-        match t {
-            VectorKind::String => self.expose_uint8_memory(memory),
-            VectorKind::I8 => self.expose_int8_memory(memory),
-            VectorKind::U8 => self.expose_uint8_memory(memory),
-            VectorKind::ClampedU8 => self.expose_clamped_uint8_memory(memory),
-            VectorKind::I16 => self.expose_int16_memory(memory),
-            VectorKind::U16 => self.expose_uint16_memory(memory),
-            VectorKind::I32 => self.expose_int32_memory(memory),
-            VectorKind::U32 => self.expose_uint32_memory(memory),
-            VectorKind::I64 => self.expose_int64_memory(memory),
-            VectorKind::U64 => self.expose_uint64_memory(memory),
-            VectorKind::F32 => self.expose_f32_memory(memory),
-            VectorKind::F64 => self.expose_f64_memory(memory),
-            VectorKind::Externref => self.expose_uint32_memory(memory),
-            VectorKind::NamedExternref(_) => self.expose_uint32_memory(memory),
-        }
-    }
-
     fn memview(&mut self, kind: &'static str, memory: walrus::MemoryId) -> MemView {
         let view = self.memview_memory(kind, memory);
         if !self.should_write_global(view.name.clone()) {
@@ -2816,15 +2798,15 @@ impl<'a> Context<'a> {
             match &js.name {
                 JsImportName::Module { module, name } => {
                     let import = self.module.imports.get_mut(id);
-                    import.module = module.clone();
-                    import.name = name.clone();
+                    import.module.clone_from(module);
+                    import.name.clone_from(name);
                     return Ok(true);
                 }
                 JsImportName::LocalModule { module, name } => {
                     let module = self.config.local_module_name(module);
                     let import = self.module.imports.get_mut(id);
                     import.module = module;
-                    import.name = name.clone();
+                    import.name.clone_from(name);
                     return Ok(true);
                 }
                 JsImportName::InlineJs {
@@ -2837,7 +2819,7 @@ impl<'a> Context<'a> {
                         .inline_js_module_name(unique_crate_identifier, *snippet_idx_in_crate);
                     let import = self.module.imports.get_mut(id);
                     import.module = module;
-                    import.name = name.clone();
+                    import.name.clone_from(name);
                     return Ok(true);
                 }
 
@@ -3596,6 +3578,31 @@ impl<'a> Context<'a> {
                 )
             }
 
+            Intrinsic::Uint8ArrayNew
+            | Intrinsic::Uint8ClampedArrayNew
+            | Intrinsic::Uint16ArrayNew
+            | Intrinsic::Uint32ArrayNew
+            | Intrinsic::BigUint64ArrayNew
+            | Intrinsic::Int8ArrayNew
+            | Intrinsic::Int16ArrayNew
+            | Intrinsic::Int32ArrayNew
+            | Intrinsic::BigInt64ArrayNew
+            | Intrinsic::Float32ArrayNew
+            | Intrinsic::Float64ArrayNew => {
+                assert_eq!(args.len(), 1);
+                args[0].clone()
+            }
+
+            Intrinsic::ArrayNew => {
+                assert_eq!(args.len(), 0);
+                "[]".to_string()
+            }
+
+            Intrinsic::ArrayPush => {
+                assert_eq!(args.len(), 2);
+                format!("{}.push({})", args[0], args[1])
+            }
+
             Intrinsic::ExternrefHeapLiveCount => {
                 assert_eq!(args.len(), 0);
                 self.expose_global_heap();
@@ -3646,13 +3653,19 @@ impl<'a> Context<'a> {
 
     fn generate_enum(&mut self, enum_: &AuxEnum) -> Result<(), Error> {
         let docs = format_doc_comments(&enum_.comments, None);
-        let mut variants = String::new();
+        let tags_name = &format!("{}_Tags", enum_.name);
+        let base_name = &format!("{}_Base", enum_.name);
+        let mut tag_variants = String::new();
+        let mut typescript_tag_variants = String::new();
+        let mut constructor_variants = String::new();
+        let mut typescript_constructor_variants = String::new();
+        let mut typescript_constructor_type_variants = String::new();
 
-        if enum_.generate_typescript {
-            self.typescript.push_str(&docs);
-            self.typescript
-                .push_str(&format!("export enum {} {{", enum_.name));
-        }
+        // if enum_.generate_typescript {
+        //     self.typescript.push_str(dbg!(&docs));
+        //     self.typescript
+        //         .push_str(dbg!(&format!("type {} = ", enum_.name)));
+        // }
         for (name, value, comments) in enum_.variants.iter() {
             let variant_docs = if comments.is_empty() {
                 String::new()
@@ -3660,27 +3673,83 @@ impl<'a> Context<'a> {
                 format_doc_comments(comments, None)
             };
             if !variant_docs.is_empty() {
-                variants.push('\n');
-                variants.push_str(&variant_docs);
+                tag_variants.push('\n');
+                tag_variants.push_str(&variant_docs);
             }
-            variants.push_str(&format!("{}:{},", name, value));
-            variants.push_str(&format!("\"{}\":\"{}\",", value, name));
+            tag_variants.push_str(&format!("{}:{},", name, value));
+            tag_variants.push_str(&format!("\"{}\":\"{}\",", value, name));
+
+            constructor_variants.push_str(&format!(
+                "{}:Object.freeze(new {}({}.{})), ",
+                name, base_name, tags_name, name
+            ));
             if enum_.generate_typescript {
-                self.typescript.push('\n');
-                if !variant_docs.is_empty() {
-                    self.typescript.push_str(&variant_docs);
-                }
-                self.typescript.push_str(&format!("  {name} = {value},"));
+                typescript_tag_variants.push_str(&format!("\n const {} = {};", name, value));
+                typescript_constructor_variants.push_str(&format!("\n  {}(): {}({}.{});", name, base_name, tags_name,name));
+                typescript_constructor_type_variants.push_str(&format!("\n  {}: Readonly<{}>;", name, base_name));
+                //    self.typescript.push('\n');
+                //    if !variant_docs.is_empty() {
+                //        self.typescript.push_str(&variant_docs);
+                //    }
+                //    self.typescript.push_str(&format!("|  {name} = {value},"));
             }
         }
-        if enum_.generate_typescript {
-            self.typescript.push_str("\n}\n");
+        //if enum_.generate_typescript {
+        //    self.typescript.push_str("\n;\n");
+        //}
+
+        let contents = format!("Object.freeze({{ {} }})", tag_variants);
+        match &self.config.mode {
+            OutputMode::Node { .. } | OutputMode::NoModules { .. } | OutputMode::Deno => {
+                self.global(&format!("const {} =  {} ", tags_name, contents));
+                self.export(tags_name, tags_name, Some(&docs))?;
+            }
+            _ => {
+                self.export(tags_name, &contents, Some(&docs))?;
+            }
         }
-        self.export(
-            &enum_.name,
-            &format!("Object.freeze({{ {} }})", variants),
-            Some(&docs),
-        )?;
+
+        self.global(&format!(
+            "
+              class {} {{
+                  constructor(tag) {{
+                    this.tag = tag;
+                  }}
+              }}
+            ",
+            base_name
+        ));
+        if enum_.generate_typescript {
+            self.typescript.push_str(&format!(
+                "
+            declare class {} {{
+                constructor(tag: any);
+                tag: any;
+            }}
+",
+                base_name
+            ));
+        }
+
+        let contents = format!("Object.freeze({{ {} }})", constructor_variants);
+        match &self.config.mode {
+            OutputMode::Node { .. } | OutputMode::NoModules { .. } | OutputMode::Deno => {
+                self.global(&format!("const {} =  {} ", enum_.name, contents));
+                self.export(&enum_.name, &enum_.name, Some(&docs))?;
+            }
+            _ => {
+                self.export(&enum_.name, &contents, Some(&docs))?;
+            }
+        }
+        self.typescript.push_str(&format!("export const {}: Readonly<{{ {} }}>;\n", tags_name, tag_variants));
+        self.typescript
+            .push_str(&format!("export const {}: Readonly<{{{}\n}}>;\n", enum_.name, typescript_constructor_type_variants));
+        // TODO: add constructors
+        self.typescript
+            .push_str(&format!("export const {}: Readonly<{{{}\n}}>;\n", enum_.name, typescript_constructor_variants));
+        // self.typescript
+        //     .push_str(&format!("export const {} = typeof {}_Value;\n", enum_.name, enum_.name));
+        // self.typescript.push_str(&enum_.name, &enum_.name, Some(&docs))?;
 
         Ok(())
     }
@@ -4127,6 +4196,7 @@ impl ExportedClass {
         }
     }
 
+    #[allow(clippy::assigning_clones)] // Clippy's suggested fix doesn't work at MSRV.
     fn push_accessor_ts(
         &mut self,
         docs: &str,

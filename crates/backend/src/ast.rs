@@ -24,7 +24,7 @@ pub struct Program {
     /// rust structs
     pub structs: Vec<Struct>,
     /// custom typescript sections to be included in the definition file
-    pub typescript_custom_sections: Vec<String>,
+    pub typescript_custom_sections: Vec<LitOrExpr>,
     /// Inline JS snippets
     pub inline_js: Vec<String>,
     /// Path to wasm_bindgen
@@ -242,10 +242,10 @@ pub struct Operation {
 pub enum OperationKind {
     /// A standard method, nothing special
     Regular,
-    /// A method for getting the value of the provided Ident
-    Getter(Option<Ident>),
-    /// A method for setting the value of the provided Ident
-    Setter(Option<Ident>),
+    /// A method for getting the value of the provided Ident or String
+    Getter(Option<String>),
+    /// A method for setting the value of the provided Ident or String
+    Setter(Option<String>),
     /// A dynamically intercepted getter
     IndexingGetter,
     /// A dynamically intercepted setter
@@ -458,6 +458,16 @@ pub enum TypeLocation {
     ExportArgument,
     /// An exported return
     ExportRet,
+}
+
+/// An enum representing either a literal value (`Lit`) or an expression (`syn::Expr`).
+#[cfg_attr(feature = "extra-traits", derive(Debug))]
+#[derive(Clone)]
+pub enum LitOrExpr {
+    /// Represents an expression that needs to be evaluated before it can be encoded
+    Expr(syn::Expr),
+    /// Represents a literal string that can be directly encoded.
+    Lit(String),
 }
 
 impl Export {

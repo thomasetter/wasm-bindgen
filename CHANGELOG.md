@@ -1,6 +1,52 @@
 # `wasm-bindgen` Change Log
 --------------------------------------------------------------------------------
 
+## Unreleased
+
+### Added
+
+* Added support for arbitrary expressions when using `#[wasm_bindgen(typescript_custom_section)]`.
+  [#3901](https://github.com/rustwasm/wasm-bindgen/pull/3901)
+
+* Implement `From<NonNull<T>>` for `JsValue`.
+  [#3877](https://github.com/rustwasm/wasm-bindgen/pull/3877)
+
+* Add method `copy_within` for TypedArray, add methods `find_last`,`find_last_index` for Array.
+  [#3888](https://github.com/rustwasm/wasm-bindgen/pull/3888)
+
+* Added support for returning `Vec`s from async functions.
+  [#3630](https://github.com/rustwasm/wasm-bindgen/pull/3630)
+
+* Added bindings for `InputDeviceInfo` and `MediaTrackCapabilities`.
+  [#3935](https://github.com/rustwasm/wasm-bindgen/pull/3935)
+
+* Add bindings for `RTCRtpReceiver.getCapabilities(DOMString)` method.
+  [#3941](https://github.com/rustwasm/wasm-bindgen/pull/3941)
+
+### Changed
+
+* Stabilize Web Share API.
+  [#3882](https://github.com/rustwasm/wasm-bindgen/pull/3882)
+
+* Generate JS bindings for WebIDL dictionary setters instead of using `Reflect`. This increases the size of the Web API bindings but should be more performant. Also, importing getters/setters from JS now supports specifying the JS attribute name as a string, e.g. `#[wasm_bindgen(method, setter = "x-cdm-codecs")]`.
+  [#3898](https://github.com/rustwasm/wasm-bindgen/pull/3898)
+
+### Fixed
+
+* Copy port from headless test server when using `WASM_BINDGEN_TEST_ADDRESS`.
+  [#3873](https://github.com/rustwasm/wasm-bindgen/pull/3873)
+
+* Fix `catch` not being thread-safe.
+  [#3879](https://github.com/rustwasm/wasm-bindgen/pull/3879)
+
+* Fix MSRV compilation.
+  [#3927](https://github.com/rustwasm/wasm-bindgen/pull/3927)
+
+* Fixed `clippy::empty_docs` lint.
+  [#3946](https://github.com/rustwasm/wasm-bindgen/pull/3946)
+
+--------------------------------------------------------------------------------
+
 ## [0.2.92](https://github.com/rustwasm/wasm-bindgen/compare/0.2.91...0.2.92)
 
 Released 2024-03-04
@@ -249,7 +295,7 @@ Released 2023-11-01
   It was also automatically changed for `IdbFileHandle`, which is deprecated.
   [#3537](https://github.com/rustwasm/wasm-bindgen/pull/3537)
 
-* Changed behavior when compiling to `wasm32-wasi` to match `wasm32-emscripten` and 
+* Changed behavior when compiling to `wasm32-wasi` to match `wasm32-emscripten` and
   non-WASM targets, generating a stub that panics when called rather than a wasm-
   bindgen placeholder.
   [#3233](https://github.com/rustwasm/wasm-bindgen/pull/3233)

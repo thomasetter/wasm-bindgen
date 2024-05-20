@@ -65,8 +65,8 @@ macro_rules! attrgen {
             (module, Module(Span, String, Span)),
             (raw_module, RawModule(Span, String, Span)),
             (inline_js, InlineJs(Span, String, Span)),
-            (getter, Getter(Span, Option<Ident>)),
-            (setter, Setter(Span, Option<Ident>)),
+            (getter, Getter(Span, Option<String>)),
+            (setter, Setter(Span, Option<String>)),
             (indexing_getter, IndexingGetter(Span)),
             (indexing_setter, IndexingSetter(Span)),
             (indexing_deleter, IndexingDeleter(Span)),
@@ -299,10 +299,15 @@ impl Parse for BindgenAttr {
                 return Ok(BindgenAttr::$variant(attr_span, ident))
             });
 
-            (@parser $variant:ident(Span, Option<Ident>)) => ({
+            (@parser $variant:ident(Span, Option<String>)) => ({
                 if input.parse::<Token![=]>().is_ok() {
+                    if input.peek(syn::LitStr) {
+                        let litstr = input.parse::<syn::LitStr>()?;
+                        return Ok(BindgenAttr::$variant(attr_span, Some(litstr.value())))
+                    }
+
                     let ident = input.parse::<AnyIdent>()?.0;
-                    return Ok(BindgenAttr::$variant(attr_span, Some(ident)))
+                    return Ok(BindgenAttr::$variant(attr_span, Some(ident.to_string())))
                 } else {
                     return Ok(BindgenAttr::$variant(attr_span, None));
                 }
@@ -1399,17 +1404,17 @@ impl MacroParse<BindgenAttrs> for syn::ItemConst {
             bail_span!(self, "#[wasm_bindgen] will not work on constants unless you are defining a #[wasm_bindgen(typescript_custom_section)].");
         }
 
-        match get_expr(&self.expr) {
+        let typescript_custom_section = match get_expr(&self.expr) {
             syn::Expr::Lit(syn::ExprLit {
                 lit: syn::Lit::Str(litstr),
                 ..
-            }) => {
-                program.typescript_custom_sections.push(litstr.value());
-            }
-            expr => {
-                bail_span!(expr, "Expected a string literal to be used with #[wasm_bindgen(typescript_custom_section)].");
-            }
-        }
+            }) => ast::LitOrExpr::Lit(litstr.value()),
+            expr => ast::LitOrExpr::Expr(expr.clone()),
+        };
+
+        program
+            .typescript_custom_sections
+            .push(typescript_custom_section);
 
         opts.check_used();
 
